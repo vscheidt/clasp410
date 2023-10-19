@@ -366,7 +366,7 @@ def timestep_change():
 #Using only RK8 because it is the higher order and more accurate form
 
 #Putting the coefficents in an array to use for plotting label purposes 
-coeff = [0,1,0,2]
+coeff = [0.05,1,0.05,2]
 
 time, n1comprk, n2comprk, max_step = rk8_solve(derivative_competiton, 
     n1_init = 0.3, n2_init = 0.6, tstep= 1, tstop= 100, 
@@ -399,7 +399,7 @@ fig3.savefig('./Competition Figures/Stable Equilibrium Competition Coeff \
 
 #Continuing to only use RK8 because it is higher order and better
 
-coeff = [3,1,1,1]
+coeff = [1,1,1,3]
 time, n1predrk, n2predrk, max_step = rk8_solve(derivative_predator, 
     n1_init = 0.5, n2_init = 0.4, tstep= 0.5, tstop= 100, 
     a=coeff[0], b=coeff[1], c=coeff[2], d=coeff[3])
