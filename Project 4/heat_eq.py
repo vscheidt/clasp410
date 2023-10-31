@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-'''
-Questions:
-    What does the initial condition of 0 degrees mean and how do we know if
-    if the ground is in a steady state?
-    What are we changing for questions 3? Are we adding a certain number of
-    degrees of change between all the surface temperatures or is there
-    something else? If it is the above, what should the graphs look like?
-'''
-
 """
 This is a script for CLIMATE 410 Lab 4: Heat Diffusion & Permafrost. We solve
 for the heat diffusivity equation numerically with a forward-difference approach
