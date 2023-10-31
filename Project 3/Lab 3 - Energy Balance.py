@@ -69,9 +69,6 @@ def energybalance(nlayers, emiss=1, emiss_g=1, S0 = 1350, albedo = 0.33):
     
     b[0] = (-S0/4)*(1-albedo)
     Ainv = np.linalg.inv(A)
-    #print(A)
-    #print(Ainv)
-    #print(b)
     fluxes = np.matmul(Ainv,b)
     #print (fluxes)
     surface_temp = (fluxes[0]/(sigma*emiss_g))**(1/4)
