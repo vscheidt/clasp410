@@ -279,8 +279,16 @@ def plot_line(x, time, temp, axes, xlabel='Time ($s$)', title='',
     ax2.annotate('Isothermal Permafrost Range: {} m to {} m'.format(x_green[index_perma],x_green[winter_zero]), 
                  xy=(0.45,-0.14), xycoords='axes fraction', fontsize=12)
     
+    
 x_green, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, bot = 5)
+
+loc = int(-365/10) # Final 365 days of the result.
+# Extract the min values over the final year:
+winter = temp_green[:, loc:].min(axis=1)
+summer = temp_green[:, loc:].max(axis=1)
+
+
 
 fig, axes = plt.subplots(1, 1)
 
@@ -296,7 +304,26 @@ plot_line(x_green, t_green, temp_green, ax2, xlabel='Time ($s$)', title='Kangerl
             ylabel='Depth ($m$)')
 fig.tight_layout()
 
+#Finding where the lines intersect and where the summer is zero
+for i in range(0,len(summer)):
+    if summer[i] <= 0:
+        index_zero = i
+        break
+ax2.annotate('Active Layer Depth: {} m'.format(x_green[index_zero]), xy=(0.15,-0.14), 
+            xycoords='axes fraction', fontsize=12)
+
+for j in range(0,len(summer)):
+    if summer[j] - winter[j] <= np.abs(0.1):
+        index_perma = j
+        break
+for k in range(0,len(winter)):
+    if winter[k]>=0:
+        winter_zero = k-1
+        break
+
 ########################### Global Warming Conditions #########################
+#1
+#-------------------------------------------
 warming = np.array([0.5,1,3])
 
 x_green05, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
@@ -318,6 +345,9 @@ plot_line(x_green05, t_green, temp_green, ax2, xlabel='Time ($s$)',
             ylabel='Depth ($m$)')
 fig.tight_layout()
 
+#2
+#-------------------------------------------
+
 x_green1, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
         bot = 5, temp_shift = warming[1])
@@ -337,6 +367,8 @@ plot_line(x_green1, t_green, temp_green, ax2, xlabel='Time ($s$)',
             ylabel='Depth ($m$)')
 fig.tight_layout()
 
+#3
+#------------------------------------------
 x_green3, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
         bot = 5, temp_shift = warming[2])
@@ -374,7 +406,6 @@ plot_line(x_green, x_green3, t_green, temp_green, ax2, xlabel='Time ($s$)',
 # fig.tight_layout()
 # =============================================================================
 
-raise Exception
 # Set indexing for the final year of results:
 loc = int(-365/10) # Final 365 days of the result.
 # Extract the min values over the final year:
