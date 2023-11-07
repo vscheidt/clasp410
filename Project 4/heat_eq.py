@@ -194,6 +194,7 @@ axes.annotate('Max Error: {}'.format(max_error), xy=(0.2,-0.22),
 
 
 ################################ Greenland ###################################
+#Plotting function for heat maps for Greenland
 def plot_temp(x, time, temp, axes, xlabel='Time ($s$)', title='',
               ylabel='Distance ($m$)', clabel=r'Temperature ($^{\circ} C$)',
               cmap='inferno', **kwargs):
@@ -221,6 +222,7 @@ def plot_temp(x, time, temp, axes, xlabel='Time ($s$)', title='',
     axes.set_title(title)
     axes.invert_yaxis()
 
+#Plotting function for line maps for temperature profile
 def plot_line(x, time, temp, axes, xlabel='Time ($s$)', title='',
               ylabel='Distance ($m$)', inverty=False,**kwargs):
     '''
@@ -280,6 +282,7 @@ def plot_line(x, time, temp, axes, xlabel='Time ($s$)', title='',
                  xy=(0.45,-0.14), xycoords='axes fraction', fontsize=12)
     
     
+#First Greenland temps, no warming
 x_green, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, bot = 5)
 
@@ -287,8 +290,6 @@ loc = int(-365/10) # Final 365 days of the result.
 # Extract the min values over the final year:
 winter = temp_green[:, loc:].min(axis=1)
 summer = temp_green[:, loc:].max(axis=1)
-
-
 
 fig, axes = plt.subplots(1, 1)
 
@@ -322,7 +323,7 @@ for k in range(0,len(winter)):
         break
 
 ########################### Global Warming Conditions #########################
-#1
+#1 +0.5 degC
 #-------------------------------------------
 warming = np.array([0.5,1,3])
 
@@ -345,7 +346,7 @@ plot_line(x_green05, t_green, temp_green, ax2, xlabel='Time ($s$)',
             ylabel='Depth ($m$)')
 fig.tight_layout()
 
-#2
+#2 +1 degC
 #-------------------------------------------
 
 x_green1, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
@@ -367,7 +368,7 @@ plot_line(x_green1, t_green, temp_green, ax2, xlabel='Time ($s$)',
             ylabel='Depth ($m$)')
 fig.tight_layout()
 
-#3
+#3 +3 degC
 #------------------------------------------
 x_green3, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
@@ -387,24 +388,6 @@ plot_line(x_green3, t_green, temp_green, ax2, xlabel='Time ($s$)',
           title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[2]),
             ylabel='Depth ($m$)')
 fig.tight_layout()
-
-
-
-###Creating a depth and temperature graph that compares the original 
-#with the 3 degrees of extra warming#######################################
-'''
-fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-
-plot_line(x_green, x_green3, t_green, temp_green, ax2, xlabel='Time ($s$)', 
-          title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[0]),
-            ylabel='Depth ($m$)')
-'''
-# =============================================================================
-# plot_line(x_green3, t_green, temp_green, ax2, xlabel='Time ($s$)', 
-#           title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[2]),
-#             ylabel='Depth ($m$)',inverty=True)
-# fig.tight_layout()
-# =============================================================================
 
 # Set indexing for the final year of results:
 loc = int(-365/10) # Final 365 days of the result.
