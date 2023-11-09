@@ -188,51 +188,122 @@ plt.ylabel('Space Step')
 axes.annotate('Max Error: {}'.format(max_error), xy=(0.2,-0.22), 
             xycoords='axes fraction', fontsize=9)
 
-
 #Purposely triggering the stability criteria to check that it works
 #print('Checking if the stability criteria works. Another statement should pop up')
 #x,t,temp = heat_solve(t_step= 0.2, x_step =0.2, init = sample_init)
 
 
 ################################ Greenland ###################################
+#Plotting function for heat maps for Greenland
+def plot_temp(x, time, temp, axes, xlabel='Time ($s$)', title='',
+              ylabel='Distance ($m$)', clabel=r'Temperature ($^{\circ} C$)',
+              cmap='inferno', **kwargs):
+    '''
+    Add a pcolor plot of the heat equation to `axes`. Add a color bar.
+
+    Parameters
+    ----------
+    x
+        Array of position values
+    time
+        Array of time values 
+    temp
+        array of temperature solution
+    xlabel, ylabel, title, clabel
+        Axes labels and titles
+    cmap : inferno
+        Matplotlib colormap name.
+    '''
+
+    map = axes.pcolor(time, x, temp, cmap=cmap, **kwargs)
+    plt.colorbar(map, ax=axes, label=clabel)
+    axes.set_xlabel(xlabel)
+    axes.set_ylabel(ylabel)
+    axes.set_title(title)
+    axes.invert_yaxis()
+
+#Plotting function for line maps for temperature profile
+def plot_line(x, time, temp, axes, xlabel='Time ($s$)', title='',
+              ylabel='Distance ($m$)', inverty=False,**kwargs):
+    '''
+    Add a pcolor plot of the heat equation to `axes`. Add a color bar.
+
+    Parameters
+    ----------
+    x
+        Array of position values
+    time
+        Array of time values 
+    temp
+        array of temperature solution
+    xlabel, ylabel, title, clabel
+        Axes labels and titles
+    cmap : inferno
+        Matplotlib colormap name.
+    '''
+    
+    loc = int(-365/10) # Final 365 days of the result.
+    # Extract the min values over the final year:
+    winter = temp[:, loc:].min(axis=1)
+    summer = temp[:, loc:].max(axis=1)
+    
+    
+    plt.plot(winter, x, label='Winter')
+    plt.plot(summer, x, '--', label='Summer')
+    #plt.plot(winter, x2, label='Winter 2')
+    #plt.plot(summer, x2, '--', label='Summer 2')
+    plt.xlim(-8,4)
+    axes.set_xlabel(xlabel)
+    axes.set_ylabel(ylabel)
+    axes.set_title(title)
+    axes.invert_yaxis()
+    plt.legend()
+    
+    if inverty==True:
+        axes.invert_yaxis()
+    
+    #Finding where the lines intersect and where the summer is zero
+    for i in range(0,len(summer)):
+        if summer[i] <= 0:
+            index_zero = i
+            break
+    ax2.annotate('Active Layer Depth: {} m'.format(x_green[index_zero]), xy=(0.15,-0.14), 
+                xycoords='axes fraction', fontsize=12)
+
+    for j in range(0,len(summer)):
+        if summer[j] - winter[j] <= np.abs(0.1):
+            index_perma = j
+            break
+    for k in range(0,len(winter)):
+        if winter[k]>=0:
+            winter_zero = k-1
+            break
+    ax2.annotate('Isothermal Permafrost Range: {} m to {} m'.format(x_green[index_perma],x_green[winter_zero]), 
+                 xy=(0.45,-0.14), xycoords='axes fraction', fontsize=12)
+    
+    
+#First Greenland temps, no warming
 x_green, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, bot = 5)
 
-### Creating the temperature with respect to time and space graph
-# Create a figure/axes object
-fig, axes = plt.subplots(1, 1)
-# Create a color map and add a color bar.
-map2 = axes.pcolor(t_green/365, x_green, temp_green, cmap='seismic', vmin =-25, vmax =25)
-plt.colorbar(map2, ax=axes, label='Temperature ($^\circ$C)')
-
-#Properly labeling the graphs
-plt.title('Greenland Permafrost Diffusivity')
-plt.xlabel('Time (years)')
-plt.ylabel('Depth (m)')
-axes.invert_yaxis()
-
-
-### Creating the depth and temperature line graphs
-# Set indexing for the final year of results:
 loc = int(-365/10) # Final 365 days of the result.
 # Extract the min values over the final year:
 winter = temp_green[:, loc:].min(axis=1)
 summer = temp_green[:, loc:].max(axis=1)
 
+fig, axes = plt.subplots(1, 1)
 
-# Create a temp profile plot:
+plot_temp(x_green, t_green/365., temp_green, axes, xlabel='Time (Years)', ylabel='Depth ($m$)',
+          cmap='seismic', vmin=-25, vmax=25,
+          clabel='Temperature ($^\circ$C)', 
+          title='Greenland Permafrost Diffusivity')
+fig.tight_layout()
+
 fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-plt.plot(winter, x_green, label='Winter')
-plt.plot(summer, x_green, '--', label='Summer')
-plt.xlim(-8,4)
 
-#Properly labeling the graphs
-ax2.invert_yaxis()
-plt.title('Kangerlussuaq, Greenland Temperature',fontsize=17)
-plt.xlabel('Temperature ($^\circ$C)', fontsize=15)
-plt.ylabel('Depth (m)',fontsize=15)
-plt.grid() #easier to see visually where the line is shifting
-plt.legend() # to identify where each line 
+plot_line(x_green, t_green, temp_green, ax2, xlabel='Time ($s$)', title='Kangerlussuaq, Greenland Temperature',
+            ylabel='Depth ($m$)')
+fig.tight_layout()
 
 #Finding where the lines intersect and where the summer is zero
 for i in range(0,len(summer)):
@@ -250,138 +321,73 @@ for k in range(0,len(winter)):
     if winter[k]>=0:
         winter_zero = k-1
         break
-    
-ax2.annotate('Isothermal Permafrost Range: {} m to {} m'.format(x_green[index_perma],x_green[winter_zero]), 
-             xy=(0.45,-0.14), xycoords='axes fraction', fontsize=12)
+
 ########################### Global Warming Conditions #########################
+#1 +0.5 degC
+#-------------------------------------------
 warming = np.array([0.5,1,3])
 
 x_green05, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
         bot = 5, temp_shift = warming[0])
 
-### Creating the temperature with respect to time and space graph
-# Create a figure/axes object
 fig, axes = plt.subplots(1, 1)
-# Create a color map and add a color bar.
-map2 = axes.pcolor(t_green/365, x_green, temp_green, cmap='seismic', vmin =-25, vmax =25)
-plt.colorbar(map2, ax=axes, label='Temperature ($^\circ$C)')
 
-#Properly labeling the graphs
-plt.title('Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[0]))
-plt.xlabel('Time (years)')
-plt.ylabel('Depth (m)')
-axes.invert_yaxis()
+plot_temp(x_green05, t_green/365., temp_green, axes, xlabel='Time (Years)', ylabel='Depth ($m$)',
+          cmap='seismic', vmin=-25, vmax=25,
+          clabel='Temperature ($^\circ$C)', 
+          title='Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[0]))
+fig.tight_layout()
 
-
-
-### Creating the depth and temperature line graphs
-# Set indexing for the final year of results:
-loc = int(-365/10) # Final 365 days of the result.
-# Extract the min values over the final year:
-winter_05 = temp_green[:, loc:].min(axis=1)
-summer_05 = temp_green[:, loc:].max(axis=1)
-# Create a temp profile plot:
 fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-plt.plot(winter_05, x_green05, label=('Winter +{} $^\circ$C').format(warming[0]))
-plt.plot(summer_05, x_green05, '--', label=('Summer +{} $^\circ$C').format(warming[0]))
 
-#Properly labeling the graphs
-ax2.invert_yaxis()
-plt.title('Kangerlussuaq, Greenland Temperature')
-plt.xlabel('Temperature ($^\circ$C)')
-plt.xlim(-8,4)
-plt.ylabel('Depth (m)')
-plt.grid()
-plt.legend()
+plot_line(x_green05, t_green, temp_green, ax2, xlabel='Time ($s$)', 
+          title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[0]),
+            ylabel='Depth ($m$)')
+fig.tight_layout()
 
-
-
+#2 +1 degC
+#-------------------------------------------
 
 x_green1, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
         bot = 5, temp_shift = warming[1])
 
-### Creating the temperature with respect to time and space graph
-# Create a figure/axes object
 fig, axes = plt.subplots(1, 1)
-# Create a color map and add a color bar.
-map2 = axes.pcolor(t_green/365, x_green1, temp_green, cmap='seismic', vmin =-25, vmax =25)
-plt.colorbar(map2, ax=axes, label='Temperature ($^\circ$C)')
 
-#Properly labeling the graphs
-plt.title('Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[1]))
-plt.xlabel('Time (years)')
-plt.ylabel('Depth (m)')
-axes.invert_yaxis()
+plot_temp(x_green1, t_green/365., temp_green, axes, xlabel='Time (Years)', ylabel='Depth ($m$)',
+          cmap='seismic', vmin=-25, vmax=25,
+          clabel='Temperature ($^\circ$C)', 
+          title='Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[1]))
+fig.tight_layout()
 
-
-
-### Creating the depth and temperature line graphs
-# Set indexing for the final year of results:
-loc = int(-365/10) # Final 365 days of the result.
-# Extract the min values over the final year:
-winter_1 = temp_green[:, loc:].min(axis=1)
-summer_1 = temp_green[:, loc:].max(axis=1)
-# Create a temp profile plot:
 fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-plt.plot(winter_1, x_green1, label=('Winter +{} $^\circ$C').format(warming[1]))
-plt.plot(summer_1, x_green1, '--', label=('Summer +{} $^\circ$C').format(warming[1]))
 
-#Properly labeling the graphs
-ax2.invert_yaxis()
-plt.title('Kangerlussuaq, Greenland Temperature')
-plt.xlabel('Temperature ($^\circ$C)')
-plt.xlim(-8,4)
-plt.ylabel('Depth (m)')
-plt.grid()
-plt.legend()
+plot_line(x_green1, t_green, temp_green, ax2, xlabel='Time ($s$)', 
+          title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[1]),
+            ylabel='Depth ($m$)')
+fig.tight_layout()
 
-
-
+#3 +3 degC
+#------------------------------------------
 x_green3, t_green, temp_green = heat_solve(t_step = 10, x_step = 1,
         C2 = c2_green, xmax = 100,tmax = 45*365, top = temp_kanger, 
         bot = 5, temp_shift = warming[2])
 
-### Creating the temperature with respect to time and space graph
-# Create a figure/axes object
 fig, axes = plt.subplots(1, 1)
-# Create a color map and add a color bar.
-map2 = axes.pcolor(t_green/365, x_green3, temp_green, cmap='seismic', vmin =-25, vmax =25)
-plt.colorbar(map2, ax=axes, label='Temperature ($^\circ$C)')
 
-#Properly labeling the graphs
-plt.title('Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[2]))
-plt.xlabel('Time (years)')
-plt.ylabel('Depth (m)')
-axes.invert_yaxis()
+plot_temp(x_green3, t_green/365., temp_green, axes, xlabel='Time (Years)', ylabel='Depth ($m$)',
+          cmap='seismic', vmin=-25, vmax=25,
+          clabel='Temperature ($^\circ$C)', 
+          title='Greenland Permafrost Diffusivity +{} $^\circ$C'.format(warming[2]))
+fig.tight_layout()
 
-
-
-### Creating the depth and temperature line graphs
-# Set indexing for the final year of results:
-loc = int(-365/10) # Final 365 days of the result.
-# Extract the min values over the final year:
-winter_3 = temp_green[:, loc:].min(axis=1)
-summer_3 = temp_green[:, loc:].max(axis=1)
-# Create a temp profile plot:
 fig, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-plt.plot(winter_3, x_green3, label=('Winter +{} $^\circ$C').format(warming[2]))
-plt.plot(summer_3, x_green3, '--', label=('Summer +{} $^\circ$C').format(warming[2]))
 
-#Properly labeling the graphs
-ax2.invert_yaxis()
-plt.title('Kangerlussuaq, Greenland Temperature')
-plt.xlabel('Temperature ($^\circ$C)')
-plt.xlim(-8,4)
-plt.ylabel('Depth (m)')
-plt.grid()
-plt.legend()
-
-
-###Creating a depth and temperature graph that compares the original 
-#with the 3 degrees of extra warming#######################################
-
+plot_line(x_green3, t_green, temp_green, ax2, xlabel='Time ($s$)', 
+          title='Kangerlussuaq, Greenland Temperature  +{} $^\circ$C'.format(warming[2]),
+            ylabel='Depth ($m$)')
+fig.tight_layout()
 
 # Set indexing for the final year of results:
 loc = int(-365/10) # Final 365 days of the result.
