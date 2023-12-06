@@ -258,7 +258,8 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
                        solar_mult = False, gamma_original = 1):
     '''
     This is function with all the meat and potatoes for this lab. This answers 
-    all varying condions for questions/steps 3 & 4
+    all varying condions for questions/steps 3 & 4 by adding a solar insolation
+    value gamma and a dynamic albedo
     
 
     Parameters
@@ -318,6 +319,10 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
         Returned for plotting
 
     '''
+    
+    # this is the parameter to add a gamma value. If the value is 1 then it is
+    # not it will change the temperature solver. If the value is zero, it applies
+    # the two arrays found in the lab spec
     if gamma_original == 0:
         
         gamma = np.arange(0.4,1.45,0.05)
@@ -325,8 +330,9 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
 
         gammas = np.zeros(2*len(gamma)-1)
         
+        #combining the two arrays togethjer because the condidtions depend on
+        #previous temperature on the ground
         gammas[0:len(gamma)] = gamma
-
         gammas[len(gamma):] = gamma_back
 
         T_mult = np.zeros(len(gammas))
@@ -335,26 +341,29 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
         T_mult = gamma_original
         gammas = gamma_original
 
-    
+    # the constants from the lab spec
     sigma = 5.67*10**-8 
     rho =1020
     c = 4.2*10**6
     mxdlyr =50
     
-    dlat = 10
+    #creation of the latitude values
     dlat, lats, edges = gen_grid(npoints)
     
+    # Onlt need one form of the array because plotting happens outside
     T_change=np.zeros(len(lats))  
         
-    
+    #These are the temperature and flash freeze conditions for the 3 question
+    # 1 means that the temprature condtions should be turned on and you need a
+    #specfic tempertature to fill the array. 0 is the normal temperature array
     if temperature == 1:
         T_change = np.zeros(len(lats))
         T_change[:] = temp_surf
     
     if temperature == 0:
-        T_change = sbf.temp_warm(lats)
+        T_change = sbf.temp_warm(lats) 
     
-    
+    #If set to true it turns the albedo to the albedo of ice
     if FlashFreeze == True:
         albedo = albedo_ice
         #print("Here")
@@ -368,7 +377,7 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
 
         
 
-    #Tri-diagnal Set=up
+    #Tri-diagnal Set=up for matrix
     A = -2*np.identity(npoints)
     for i in range(1,len(A)-1):
             A[i,i+1] = 1
@@ -378,7 +387,10 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
     A[0,1] = 2
     A[-1,-2] = 2
     
+    #converting change in time into seconds for proper multiplication
     d_sec = dt*60*60*24*365
+    
+    #creating the L matrix
     a_matrix = (1/(dy**2))* A
     L = np.identity(npoints) - (lamb*d_sec*a_matrix)
     
@@ -388,15 +400,20 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
     B[np.arange(npoints-1)+1, np.arange(npoints-1)] = -1
     B[0,:] = B[-1,:] = 0
     
+    #solving for the area xz and the finding the change in that area
     Axz = np.pi*((radearth+50.0)**2 - radearth**2)*np.sin(np.pi/180. *lats)
     dAxz = np.matmul(B,Axz)/(Axz*4*dy**2)
    
+    #If the distance isnt 1, makes sure there is an even distribution of points
     nsteps = int(tstop/dt)
     
-    #Setting up Insolation:
+    #Setting up Insolation in the outer if statement:
     if solar_mult == False:
         insol = sbf.insolation(S0, lats)
+       
+        #goes through all the latitudes
         for i in range(nsteps):
+            
             # Update albedo based on conditions:
             if dynamic == True :
                 albedo = np.zeros(len(lats))
@@ -405,7 +422,8 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
                 albedo[~loc_ice] = albedo_gnd
             if dynamic == False:
                 albedo = albedo
-       
+            
+            # The spherical and insolation corrections
             spherecord_all = lamb*d_sec*np.matmul(B,T_change)*dAxz
             T_change += spherecord_all
             radiative = (1-albedo)*insol-emiss*sigma*(T_change+273)**4
@@ -413,11 +431,12 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
             T_change = np.matmul(np.linalg.inv(L), T_change)
     
     if solar_mult == True:
-        
+        #Outer for loop goes through all the gamma values in the array
         for j in range(len(gammas)): 
             insol = gammas[j] * sbf.insolation(S0, lats)
+            
+            # Update albedo based on conditions:
             for i in range(nsteps):
-
                 if dynamic == True :
                     albedo = np.zeros(len(lats))
                     loc_ice = T_change <= -10
@@ -426,21 +445,30 @@ def snowballEarfSnow(npoints = 18, dt = 1, tstop = 10000, lamb=100, S0 = 1370,
                 if dynamic == False:
                     albedo = albedo
                     
+                 # The spherical and insolation corrections   
                 spherecord_all = lamb*d_sec*np.matmul(B,T_change)*dAxz
                 T_change += spherecord_all
                 radiative = (1-albedo)*insol-emiss*sigma*(T_change+273)**4
                 T_change += d_sec * radiative / (rho*c*mxdlyr)
                 T_change = np.matmul(np.linalg.inv(L), T_change)
+                
+            #Take the average global temeperature and save it into an array
+            #To make the final plot with
             T_mult[j] = np.mean(T_change)
     
     
     return (T_change, lats, T_mult, gammas)
-    
+################################Question 1#####################################   
+#Designed to output the figure needed
 snowballEarf()
 
+##################################Question 2###################################
+#After trial and error this was the best emissvity and diffusivity value I found
+#to match the intital condition
 snowballEarfWarm(emiss=0.72, lamb = 50)
 
 ###############################Question 3######################################
+#Doing all the plotting because it was not done in the function itself
 twarm, lats, garg, who = snowballEarfSnow(emiss= 0.72, lamb = 50, temp_surf= 60, 
                                      dynamic= True, temperature = 1)
 tcold, lats, garg, cares = snowballEarfSnow(emiss = 0.72, lamb = 50, temp_surf= -60, 
@@ -450,6 +478,7 @@ t_flash, lats, garg, notme = snowballEarfSnow(emiss = 0.72, lamb = 50, temperatu
 # Create a figure/axes object
 fig, axes = plt.subplots(1, 1)
 
+#Plotting and labeling approperiatly
 axes.plot(lats, tcold, label = 'Cold Temperatures')
 axes.plot(lats, twarm, label = 'Warm Temperatures')
 axes.plot(lats, t_flash, label = 'Flash-Freeze Scenario')
@@ -461,6 +490,7 @@ plt.legend()
 
 ################################Question 4#####################################
 
+#Running the function only once because the plotting will be split-up into two
 tgarg, lats, t_mult, gamma = snowballEarfSnow(npoints = 50, emiss= 0.72, lamb= 50, temp_surf= -60, 
                                      dynamic= True, temperature = 1, solar_mult= True,
                                      gamma_original= 0)
@@ -469,12 +499,17 @@ tgarg, lats, t_mult, gamma = snowballEarfSnow(npoints = 50, emiss= 0.72, lamb= 5
 # Create a figure/axes object
 fig, axes = plt.subplots(1, 1)
 
+#Splitting the array manually oops
 axes.plot(t_mult[0:20], gamma[0:20], label = 'Gamma Going Up')
 axes.plot(t_mult[20:], gamma[20:], label = 'Gamma Going Down')
+
+#code to have the plot flipped, just make sure to comment out the other two plotting
+#lines above
 
 #axes.plot(gamma[0:20], t_mult[0:20], label = 'Gamma Going Up')
 #axes.plot(gamma[20:],t_mult[20:], label = 'Gamma Going Down')
 
+#proper labeling
 plt.title('Mean Global Temperature VS Gamma')
 plt.xlabel('Mean Temperature $^\circ$C' )
 plt.ylabel('Gamma Value')
