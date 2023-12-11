@@ -15,18 +15,22 @@ R = 6373 #km
 water_density = 1025 #kg/m^3
 
 #Setting coordinates easier for changing later
+
+#These two lat -lons are for the pacfic problem
 ocean_lat_pac = 31.430333
 ocean_lon_pac = -177.902686
 
 japan_lat = 35.191124
 japan_lon = 140.401974
 
+#These two lat -lons are for the atlantic problem
 ocean_lat_atl = 34.852427
 ocean_lon_atl = -40.809877
 
 newyork_lat = 40.579363
 newyork_lon = -74.036040
 
+#These two lat -lons are for the Boxing Day tsunami problem
 indian_coast_lat = 13.080270
 indian_coast_lon = 80.294804
 
@@ -204,7 +208,7 @@ def wave(time, a, wavelength, c, distance, dx=1000, dt = 1000, energy_calc = Fal
     height_y = np.zeros(len(time_array))
     
     for i in range(0,len(time_array)):
-        height_y[i] = a*np.sin((2*np.pi/wavelength)*(dist_array[i]-c*1000*time_array[i])) 
+        height_y[i] = a*np.sin((2*np.pi/wavelength)*(dist_array[i]-c*time_array[i])) 
     
     time_hr = time/(60*60)
     
@@ -231,6 +235,7 @@ def wave(time, a, wavelength, c, distance, dx=1000, dt = 1000, energy_calc = Fal
 time_T, wavelength_T, distance_T, phase_speed, phase_speedkmhr = tsunami(6, 400, distance = 3000)
 wave(time_T, 0.5, wavelength_T, phase_speed, distance_T)
 
+print(phase_speedkmhr)
 #################################Question 3####################################
 #Doing something over the atlantic
 time_T, wavelength_T, distance_T, phase_speed, phase_speedkmhr = tsunami(3.646, 400, latlon= True,
@@ -254,6 +259,6 @@ time_T, wavelength_T, distance_T, phase_speed, phase_speedkmhr = tsunami(5, 550,
                                                                          lat2 = indian_coast_lat, lon2 = indian_coast_lon)
 
 wave(time_T, 0.7, wavelength_T, phase_speed, distance_T, energy_calc= True, wave_height = 50)
-print(phase_speed)
+print(phase_speedkmhr)
 
 
